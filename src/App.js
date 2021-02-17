@@ -1,26 +1,54 @@
 import React, { Component } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
+import http from "./services/httpService";
+import config from "./config.json";
 
 class App extends Component {
   state = {
-    posts: []
+    posts: [],
+  };
+  async componentDidMount() {
+    const { data: posts } = await http.get(config.apiendpoint);
+
+    this.setState({ posts });
+  }
+
+  handleAdd = async () => {
+    const obj = { title: "a", body: "b" };
+    const { data: post } = await http.post(config.apiendpoint, obj);
+    const posts = [post, ...this.state.posts];
+    this.setState({ posts });
   };
 
-  handleAdd = () => {
-    console.log("Add");
+  handleUpdate = async (post) => {
+    post.title = "updated";
+    await http.put(config.apiendpoint + "/" + post.id);
+
+    const posts = [...this.state.posts];
+    const index = posts.indexOf(post);
+    posts[index] = { ...post };
+    this.setState({ posts });
   };
 
-  handleUpdate = post => {
-    console.log("Update", post);
-  };
+  handleDelete = async (post) => {
+    const originalPosts = this.state.posts;
+    const posts = this.state.posts.filter((p) => p.id !== post.id);
+    this.setState({ posts });
+    try {
+      await http.delete('s' + config.apiendpoint + "55/" + post.id);
+    } catch (ex) {
+      if (ex.response && ex.response.status === 404)
+        toast.error("This post is deleted");
 
-  handleDelete = post => {
-    console.log("Delete", post);
+      this.setState({ post: originalPosts });
+    }
   };
-
   render() {
     return (
       <React.Fragment>
+        <ToastContainer position="top-left" />
         <button className="btn btn-primary" onClick={this.handleAdd}>
           Add
         </button>
@@ -33,22 +61,20 @@ class App extends Component {
             </tr>
           </thead>
           <tbody>
-            {this.state.posts.map(post => (
+            {this.state.posts.map((post) => (
               <tr key={post.id}>
                 <td>{post.title}</td>
                 <td>
                   <button
                     className="btn btn-info btn-sm"
-                    onClick={() => this.handleUpdate(post)}
-                  >
+                    onClick={() => this.handleUpdate(post)}>
                     Update
                   </button>
                 </td>
                 <td>
                   <button
                     className="btn btn-danger btn-sm"
-                    onClick={() => this.handleDelete(post)}
-                  >
+                    onClick={() => this.handleDelete(post)}>
                     Delete
                   </button>
                 </td>
